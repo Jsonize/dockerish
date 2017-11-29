@@ -1,11 +1,25 @@
 {
 	"name": "dockerish",
 	"description": "Dockerish is an easy way to build, run and stop containers with a local config file based on a template.",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": "Foodji",
 	"repository": "https://github.com/jsonize/dockerish",
 	"license": "Apache-2.0",
 	"engines": {
 		"node": ""
-	}
+	},
+	"bin": {
+		"dockerish": "bin/dockerish"
+	},
+	"preferGlobal": true,
+	"dependencies": {
+		"js-yaml": "~3.10.0",
+		"lodash.template": "~4.4.0",
+		"node-getopt": "~0.2.3",
+		"tmp": "0.0.33"
+	},
+	"files": [
+		"dockerish.js",
+		"bin"
+	]
 }
