@@ -25,7 +25,7 @@ else if (FS.existsSync("./dockerish.config.json"))
     config = JSON.parse(FS.readFileSync("./dockerish.config.json"));
 
 if (parsedArgs.options.namespace)
-    config = config["namespace"] || {};
+    config = config[parsedArgs.options.namespace] || {};
 
 if (parsedArgs.options.debug)
     console.log(config);
@@ -53,6 +53,8 @@ if (parsedArgs.options.debug)
 
 var dockerArgs = null;
 
+var tempFiles = [];
+
 if (parsedArgs.options.stop) {
     dockerArgs = target.run.restart ? ["rm", "-f"] : ["stop"];
     dockerArgs.push(target.container.image);
@@ -70,10 +72,22 @@ if (parsedArgs.options.stop) {
             dockerArgs.push(portmap.host + ":" + portmap.container);
         });
     }
-    dockerArgs.push("--name");
-    dockerArgs.push(target.container.image);
+    if (target.run.mounts) {
+        target.run.mounts.forEach(function (mount) {
+            dockerArgs.push("-v");
+            dockerArgs.push(mount.host + ":" + mount.container + ":" + mount.permission);
+        });
+    }
+    if (target.run.privileged)
+        dockerArgs.push("--privileged");
+    if (target.container.image) {
+        dockerArgs.push("--name");
+        dockerArgs.push(target.container.image);
+    }
     dockerArgs.push("-t");
     dockerArgs.push(target.container.name);
+    if (target.run.command)
+        dockerArgs = dockerArgs.concat(target.run.command.split(" "));
 } else if (parsedArgs.options.build) {
     var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
     var dockerfileLines = [
@@ -83,6 +97,7 @@ if (parsedArgs.options.stop) {
     var tempDockerfile = Tmp.tmpNameSync({
         template: targetDir + "/Dockerfile-tmp-XXXXXX"
     });
+    tempFiles.push(tempDockerfile);
     FS.writeFileSync(tempDockerfile, dockerfileLines.join("\n"));
     dockerArgs = [
         "build",
@@ -100,8 +115,15 @@ if (dockerArgs) {
         console.log("docker", dockerArgs.join(" "));
     var docker = ChildProcess.spawn("docker", dockerArgs);
     docker.on("close", function (status) {
+        tempFiles.forEach(function (f) {
+            FS.unlinkSync(f);
+        });
         process.exit(status);
     });
     docker.stderr.pipe(process.stderr);
     docker.stdout.pipe(process.stdout);
+} else {
+    tempFiles.forEach(function (f) {
+        FS.unlinkSync(f);
+    });
 }
