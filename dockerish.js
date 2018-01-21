@@ -9,6 +9,7 @@ const ChildProcess = require("child_process");
 var parsedArgs = GetOpt.create([
     ["h", "help", "shows help"],
     ["c", "config=FILE", "dockerish config file, defaults to ./dockerish.config.json"],
+    ["o", "overwrite=ARG+", "overwrite config options"],
     ["n", "namespace=NAMESPACE", "config sub name space (optional)"],
     ["t", "target=FILE", "dockerish template file or folder containing the template file, defaults to ./dockerish.template.yml"],
     ["r", "run", "runs the container (add additional parameters after --)"],
@@ -23,6 +24,13 @@ if (parsedArgs.options.config)
     config = JSON.parse(FS.readFileSync(parsedArgs.options.config));
 else if (FS.existsSync("./dockerish.config.json"))
     config = JSON.parse(FS.readFileSync("./dockerish.config.json"));
+
+if (parsedArgs.options.overwrite) {
+    parsedArgs.options.overwrite.forEach(function (keyvalue) {
+        var splt = keyvalue.split(":");
+        config[splt[0]] = splt[1];
+    });
+}
 
 if (parsedArgs.options.namespace)
     config = config[parsedArgs.options.namespace] || {};
@@ -84,7 +92,10 @@ if (parsedArgs.options.stop) {
         dockerArgs.push("--name");
         dockerArgs.push(target.container.image);
     }
-    dockerArgs.push("-t");
+    if (target.run.interactive)
+        dockerArgs.push("-i");
+    else
+        dockerArgs.push("-t");
     dockerArgs.push(target.container.name);
     if (target.run.command)
         dockerArgs = dockerArgs.concat(target.run.command.split(" "));
@@ -122,6 +133,7 @@ if (dockerArgs) {
     });
     docker.stderr.pipe(process.stderr);
     docker.stdout.pipe(process.stdout);
+    process.stdin.pipe(docker.stdin);
 } else {
     tempFiles.forEach(function (f) {
         FS.unlinkSync(f);
