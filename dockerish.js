@@ -10,9 +10,11 @@ var parsedArgs = GetOpt.create([
     ["h", "help", "shows help"],
     ["c", "config=FILE", "dockerish config file, defaults to ./dockerish.config.json"],
     ["o", "overwrite=ARG+", "overwrite config options"],
+    ["v", "mounts=MOUNTS+", "additional mounts"],
     ["n", "namespace=NAMESPACE", "config sub name space (optional)"],
     ["t", "target=FILE", "dockerish template file or folder containing the template file, defaults to ./dockerish.template.yml"],
     ["r", "run", "runs the container (add additional parameters after --)"],
+    ["x", "runc=CMD", "runs the container with a particular command (add additional parameters after --)"],
     ["s", "stop", "stops the container"],
     ["b", "build", "builds the container"],
     ["d", "debug", "debug"]
@@ -29,6 +31,14 @@ if (parsedArgs.options.overwrite) {
     parsedArgs.options.overwrite.forEach(function (keyvalue) {
         var splt = keyvalue.split(":");
         config[splt[0]] = splt[1];
+    });
+}
+
+var mountPlaceholders = {};
+if (parsedArgs.options.mounts) {
+    parsedArgs.options.mounts.forEach(function (keyvalue) {
+        var splt = keyvalue.split(":");
+        mountPlaceholders[splt[0]] = splt[1];
     });
 }
 
@@ -66,39 +76,43 @@ var tempFiles = [];
 if (parsedArgs.options.stop) {
     dockerArgs = target.run.restart ? ["rm", "-f"] : ["stop"];
     dockerArgs.push(target.container.image);
-} else if (parsedArgs.options.run) {
+} else if (parsedArgs.options.run || parsedArgs.options.runc) {
     dockerArgs = ["run"];
-    if (target.run.daemon)
+    var targetrun = parsedArgs.options.runc ? target[parsedArgs.options.runc] : target.run;
+    if (targetrun.daemon)
         dockerArgs.push("-d");
-    if (target.run.restart)
-        dockerArgs.push("--restart=" + target.run.restart);
+    if (targetrun.restart)
+        dockerArgs.push("--restart=" + targetrun.restart);
     else
         dockerArgs.push("--rm");
-    if (target.run.portmaps) {
-        target.run.portmaps.forEach(function (portmap) {
+    if (targetrun.portmaps) {
+        targetrun.portmaps.forEach(function (portmap) {
             dockerArgs.push("-p");
             dockerArgs.push(portmap.host + ":" + portmap.container);
         });
     }
-    if (target.run.mounts) {
-        target.run.mounts.forEach(function (mount) {
+    if (targetrun.mounts) {
+        targetrun.mounts.forEach(function (mount) {
             dockerArgs.push("-v");
-            dockerArgs.push(mount.host + ":" + mount.container + ":" + mount.permission);
+            var mountHost = Path.resolve(mount.placeholder ? mountPlaceholders[mount.placeholder] : mount.host);
+            dockerArgs.push(mountHost + ":" + mount.container + ":" + mount.permission);
+            if (mount.permission.indexOf("w") >= 0 && !FS.existsSync(mountHost))
+                FS.writeFileSync(mountHost, "");
         });
     }
-    if (target.run.privileged)
+    if (targetrun.privileged)
         dockerArgs.push("--privileged");
     if (target.container.image) {
         dockerArgs.push("--name");
         dockerArgs.push(target.container.image);
     }
-    if (target.run.interactive)
+    if (targetrun.interactive)
         dockerArgs.push("-i");
     else
         dockerArgs.push("-t");
     dockerArgs.push(target.container.name);
-    if (target.run.command)
-        dockerArgs = dockerArgs.concat(target.run.command.split(" "));
+    if (targetrun.command)
+        dockerArgs = dockerArgs.concat(targetrun.command.split(" "));
 } else if (parsedArgs.options.build) {
     var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
     var dockerfileLines = [
