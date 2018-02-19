@@ -79,6 +79,7 @@ if (parsedArgs.options.stop) {
 } else if (parsedArgs.options.run || parsedArgs.options.runc) {
     dockerArgs = ["run"];
     var targetrun = parsedArgs.options.runc ? target[parsedArgs.options.runc] : target.run;
+    targetrun = targetrun || {};
     if (targetrun.daemon)
         dockerArgs.push("-d");
     if (targetrun.restart)
@@ -115,6 +116,16 @@ if (parsedArgs.options.stop) {
         dockerArgs = dockerArgs.concat(targetrun.command.split(" "));
 } else if (parsedArgs.options.build) {
     var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
+    if (target.dockerfile.symlinks) {
+        target.dockerfile.symlinks.forEach(function (symlink) {
+            var tempFile = Tmp.tmpNameSync({
+                template: targetDir + "/symlink-tmp-XXXXXX"
+            }) + ".tar";
+            tempFiles.push(tempFile);
+            ChildProcess.execSync("tar -C " + symlink + " -cvf " + tempFile + " . 2> /dev/null");
+            target.dockerfile.commands = target.dockerfile.commands.replace(symlink, tempFile);
+        });
+    }
     var dockerfileLines = [
         "FROM " + target.dockerfile.from,
         "MAINTAINER " + target.dockerfile.maintainer
