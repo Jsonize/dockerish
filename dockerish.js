@@ -5,6 +5,7 @@ const Template = require('lodash.template');
 const Tmp = require('tmp');
 const Yaml = require("js-yaml");
 const ChildProcess = require("child_process");
+const OS = require("os");
 
 var parsedArgs = GetOpt.create([
     ["h", "help", "shows help"],
@@ -60,6 +61,30 @@ if (parsedArgs.options.debug)
     console.log(rawTarget + "");
 
 var compiledTarget = Template(rawTarget)(config);
+
+if (compiledTarget.indexOf("%{HOSTIP}") >= 0) {
+    var ifaces = OS.networkInterfaces();
+    var ips = [];
+    Object.keys(ifaces).forEach(function(dev) {
+        for (var i = 0, len = ifaces[dev].length; i < len; i++) {
+            var details = ifaces[dev][i];
+            if (details.family === 'IPv4')
+                ips.push(details.address);
+        }
+    });
+    var hostip = null;
+    ips.forEach(function (ip) {
+        if (hostip)
+            return;
+        if (ip.indexOf("192.") === 0 || ip.indexOf("10.") === 0 || (ip.indexOf("127.") === 0 && ip !== "127.0.0.1"))
+            hostip = ip;
+    });
+    if (!hostip && ips.length > 0)
+        hostip = ips[0];
+    if (!hostip)
+        hostip = "127.0.0.1";
+    compiledTarget = compiledTarget.split("%{HOSTIP}").join(hostip);
+}
 
 if (parsedArgs.options.debug)
     console.log(compiledTarget);
