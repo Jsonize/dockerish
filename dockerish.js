@@ -60,6 +60,8 @@ var rawTarget = FS.readFileSync(targetFile);
 if (parsedArgs.options.debug)
     console.log(rawTarget + "");
 
+config.FS = FS;
+
 var compiledTarget = Template(rawTarget)(config);
 
 if (compiledTarget.indexOf("%{HOSTIP}") >= 0) {
