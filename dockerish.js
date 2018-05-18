@@ -61,6 +61,7 @@ if (parsedArgs.options.debug)
     console.log(rawTarget + "");
 
 config.FS = FS;
+config.target = Path.dirname(targetFile);
 
 var compiledTarget = Template(rawTarget)(config);
 
