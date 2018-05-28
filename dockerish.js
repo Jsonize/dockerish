@@ -188,8 +188,11 @@ if (parsedArgs.options.run || parsedArgs.options.runc) {
                     FS.writeFileSync(mountHost, "");
             });
         }
-        if (targetrun.privileged)
+        if (targetrun.privileged) {
             dockerArgs.push("--privileged");
+            dockerArgs.push("-v");
+            dockerArgs.push("/dev:/dev");
+        }
         if (target.container.image) {
             dockerArgs.push("--name");
             dockerArgs.push(target.container.image);
