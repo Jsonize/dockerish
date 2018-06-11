@@ -79,7 +79,7 @@ if (compiledTarget.indexOf("%{HOSTIP}") >= 0) {
     ips.forEach(function (ip) {
         if (hostip)
             return;
-        if (ip.indexOf("192.") === 0 || ip.indexOf("10.") === 0 || (ip.indexOf("127.") === 0 && ip !== "127.0.0.1"))
+        if (ip.indexOf("192.") === 0 || ip.indexOf("10.") === 0 || ip.indexOf("172.") === 0 || (ip.indexOf("127.") === 0 && ip !== "127.0.0.1"))
             hostip = ip;
     });
     if (!hostip && ips.length > 0)
