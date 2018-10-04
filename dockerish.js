@@ -43,6 +43,29 @@ if (parsedArgs.options.mounts) {
     });
 }
 
+const json_replacer = function (obj) {
+    for (var key in obj) {
+        var value = obj[key];
+        if (typeof value === "string") {
+            value = value.split("%{JSON:");
+            var result = value.shift();
+            while (value.length > 0) {
+                var current = value.shift().split("}");
+                var json = current.shift().split(".");
+                var root = config;
+                while (json.length > 0)
+                    root = root[json.shift()];
+                result += root + current.join("}");
+                obj[key] = result;
+            }
+        } else if (value && typeof value === "object")
+            json_replacer(value);
+    }
+};
+
+json_replacer(config);
+
+
 if (parsedArgs.options.namespace)
     config = config[parsedArgs.options.namespace] || {};
 
