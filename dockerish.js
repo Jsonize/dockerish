@@ -31,7 +31,7 @@ else if (FS.existsSync("./dockerish.config.json"))
 if (parsedArgs.options.overwrite) {
     parsedArgs.options.overwrite.forEach(function (keyvalue) {
         var splt = keyvalue.split(":");
-        config[splt[0]] = splt[1];
+        config[splt.shift()] = splt.join(":");
     });
 }
 
