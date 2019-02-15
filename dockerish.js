@@ -65,6 +65,16 @@ const json_replacer = function (obj) {
 
 json_replacer(config);
 
+const shellScriptOf = function (lines, next) {
+    console.log(lines);
+    var shell = ChildProcess.spawn("sh", ["-c", lines.trim().split("\n").join("&&")]);
+    shell.on("close", function (status) {
+        next(status);
+    });
+    shell.stderr.pipe(process.stderr);
+    shell.stdout.pipe(process.stdout);
+};
+
 
 if (parsedArgs.options.namespace)
     config = config[parsedArgs.options.namespace] || {};
@@ -139,6 +149,13 @@ if (parsedArgs.options.stop) {
 
 
 if (parsedArgs.options.build) {
+
+    if (target.prebuild) {
+        tasks.push(function (next) {
+            shellScriptOf(target.prebuild, next);
+        });
+    }
+
     tasks.push(function (next) {
         var tempFiles = [];
         var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
@@ -182,6 +199,13 @@ if (parsedArgs.options.build) {
         docker.stderr.pipe(process.stderr);
         docker.stdout.pipe(process.stdout);
     });
+
+    if (target.postbuild) {
+        tasks.push(function (next) {
+            shellScriptOf(target.postbuild, next);
+        });
+    }
+
 }
 
 
