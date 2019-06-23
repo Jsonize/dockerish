@@ -67,7 +67,9 @@ json_replacer(config);
 
 const shellScriptOf = function (lines, next) {
     console.log(lines);
-    var shell = ChildProcess.spawn("sh", ["-c", lines.trim().split("\n").join("&&")]);
+    var shell = ChildProcess.spawn("sh", ["-c", lines.trim().split("\n").join("&&")], {
+        cwd: config.target
+    });
     shell.on("close", function (status) {
         next(status);
     });
