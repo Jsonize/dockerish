@@ -21,6 +21,15 @@ var parsedArgs = GetOpt.create([
     ["d", "debug", "debug"]
 ]).bindHelp().parseSystem();
 
+var tempFiles = [];
+
+process.on('SIGINT', function() {
+    tempFiles.forEach(function (f) {
+        FS.unlinkSync(f);
+    });
+    process.exit();
+});
+
 
 var config = {};
 if (parsedArgs.options.config)
@@ -159,7 +168,6 @@ if (parsedArgs.options.build) {
     }
 
     tasks.push(function (next) {
-        var tempFiles = [];
         var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
         if (target.dockerfile.symlinks) {
             target.dockerfile.symlinks.forEach(function (symlink) {
