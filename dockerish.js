@@ -18,6 +18,7 @@ var parsedArgs = GetOpt.create([
     ["x", "runc=CMD", "runs the container with a particular command (add additional parameters after --)"],
     ["s", "stop", "stops the container"],
     ["b", "build", "builds the container"],
+    ["e", "buildondemand", "builds the container on demand when running"],
     ["d", "debug", "debug"]
 ]).bindHelp().parseSystem();
 
@@ -159,8 +160,8 @@ if (parsedArgs.options.stop) {
 }
 
 
-if (parsedArgs.options.build) {
 
+const pushTaskBuild = function () {
     if (target.prebuild) {
         tasks.push(function (next) {
             shellScriptOf(target.prebuild, next);
@@ -215,11 +216,10 @@ if (parsedArgs.options.build) {
             shellScriptOf(target.postbuild, next);
         });
     }
+};
 
-}
 
-
-if (parsedArgs.options.run || parsedArgs.options.runc) {
+const pushTaskRun = function (buildondemand) {
     tasks.push(function (next) {
         var dockerArgs = ["run"];
         var targetrun = parsedArgs.options.runc ? target[parsedArgs.options.runc] : target.run;
@@ -265,12 +265,29 @@ if (parsedArgs.options.run || parsedArgs.options.runc) {
         if (parsedArgs.options.debug)
             console.log("docker", dockerArgs.join(" "));
         var docker = ChildProcess.spawn("docker", dockerArgs);
-        docker.on("close", next);
+        var errorData = "";
+        docker.on("close", function () {
+            if (errorData.indexOf("Unable to find image") >= 0 && buildondemand) {
+                pushTaskBuild();
+                pushTaskRun(false);
+            }
+            next();
+        });
         docker.stderr.pipe(process.stderr);
         docker.stdout.pipe(process.stdout);
+        docker.stderr.on("data", function (data) {
+            errorData += data;
+        });
         process.stdin.pipe(docker.stdin);
     });
-}
+};
+
+
+if (parsedArgs.options.build)
+    pushTaskBuild();
+
+if (parsedArgs.options.run || parsedArgs.options.runc)
+    pushTaskRun(parsedArgs.options.buildondemand);
 
 
 var taskExecute = function (status) {
