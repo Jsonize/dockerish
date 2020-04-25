@@ -147,7 +147,7 @@ var tasks = [];
 
 if (parsedArgs.options.stop) {
     tasks.push(function (next) {
-        var dockerArgs = target.run.restart ? ["rm", "-f"] : ["stop"];
+        var dockerArgs = target.run && target.run.restart ? ["rm", "-f"] : ["stop"];
         dockerArgs.push(target.container.image);
         dockerArgs = dockerArgs.concat(parsedArgs.argv);
         if (parsedArgs.options.debug)
@@ -233,7 +233,7 @@ const pushTaskRun = function (buildondemand) {
         if (targetrun.portmaps) {
             targetrun.portmaps.forEach(function (portmap) {
                 dockerArgs.push("-p");
-                dockerArgs.push(portmap.host + ":" + portmap.container);
+                dockerArgs.push(portmap.host + ":" + portmap.container + (portmap.udp ? "/udp" : ""));
             });
         }
         if (targetrun.mounts) {
