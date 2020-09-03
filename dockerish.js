@@ -144,6 +144,8 @@ if (parsedArgs.options.debug)
 
 var tasks = [];
 
+const targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
+
 
 if (parsedArgs.options.stop) {
     tasks.push(function (next) {
@@ -169,7 +171,6 @@ const pushTaskBuild = function () {
     }
 
     tasks.push(function (next) {
-        var targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
         if (target.dockerfile.symlinks) {
             target.dockerfile.symlinks.forEach(function (symlink) {
                 var tempFile = Tmp.tmpNameSync({
@@ -230,6 +231,15 @@ const pushTaskRun = function (buildondemand) {
             dockerArgs.push("--restart=" + targetrun.restart);
         else
             dockerArgs.push("--rm");
+        if (target.environment) {
+            var tempFile = Tmp.tmpNameSync({
+                template: targetDir + "/dockerenv-tmp-XXXXXX"
+            }) + ".env";
+            tempFiles.push(tempFile);
+            FS.writeFileSync(tempFile, target.environment);
+            dockerArgs.push("--env-file");
+            dockerArgs.push(tempFile);
+        }
         if (targetrun.portmaps) {
             targetrun.portmaps.forEach(function (portmap) {
                 dockerArgs.push("-p");
