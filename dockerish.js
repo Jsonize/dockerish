@@ -157,7 +157,9 @@ if (parsedArgs.options.stop) {
         dockerArgs = dockerArgs.concat(parsedArgs.argv);
         if (parsedArgs.options.debug)
             console.log("docker", dockerArgs.join(" "));
-        var docker = ChildProcess.spawn("docker", dockerArgs);
+        var docker = ChildProcess.spawn("docker", dockerArgs, {
+            cwd: config.target
+        });
         docker.on("close", next);
         docker.stderr.pipe(process.stderr);
         docker.stdout.pipe(process.stdout);
@@ -204,7 +206,9 @@ const pushTaskBuild = function () {
         dockerArgs = dockerArgs.concat(parsedArgs.argv);
         if (parsedArgs.options.debug)
             console.log("docker", dockerArgs.join(" "));
-        var docker = ChildProcess.spawn("docker", dockerArgs);
+        var docker = ChildProcess.spawn("docker", dockerArgs, {
+            cwd: config.target
+        });
         docker.on("close", function (status) {
             cleanTempFiles();
             next(status);
@@ -281,7 +285,9 @@ const pushTaskRun = function (buildondemand) {
         dockerArgs = dockerArgs.concat(parsedArgs.argv);
         if (parsedArgs.options.debug)
             console.log("docker", dockerArgs.join(" "));
-        var docker = ChildProcess.spawn("docker", dockerArgs);
+        var docker = ChildProcess.spawn("docker", dockerArgs, {
+            cwd: config.target
+        });
         var errorData = "";
         docker.on("close", function () {
             cleanTempFiles();
