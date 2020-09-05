@@ -221,6 +221,12 @@ const pushTaskBuild = function () {
 
 
 const pushTaskRun = function (buildondemand) {
+    if (target.prerun) {
+        tasks.push(function (next) {
+            shellScriptOf(target.prerun, next);
+        });
+    }
+
     tasks.push(function (next) {
         var dockerArgs = ["run"];
         var targetrun = parsedArgs.options.runc ? target[parsedArgs.options.runc] : target.run;
@@ -277,6 +283,9 @@ const pushTaskRun = function (buildondemand) {
         var docker = ChildProcess.spawn("docker", dockerArgs);
         var errorData = "";
         docker.on("close", function () {
+            tempFiles.forEach(function (f) {
+                FS.unlinkSync(f);
+            });
             if (errorData.indexOf("Unable to find image") >= 0 && buildondemand) {
                 pushTaskBuild();
                 pushTaskRun(false);
