@@ -24,10 +24,13 @@ var parsedArgs = GetOpt.create([
 
 var tempFiles = [];
 
+const cleanTempFiles = function () {
+    while (tempFiles.length > 0)
+        FS.unlinkSync(tempFiles.shift());
+}
+
 process.on('SIGINT', function() {
-    tempFiles.forEach(function (f) {
-        FS.unlinkSync(f);
-    });
+    cleanTempFiles();
     process.exit();
 });
 
@@ -203,9 +206,7 @@ const pushTaskBuild = function () {
             console.log("docker", dockerArgs.join(" "));
         var docker = ChildProcess.spawn("docker", dockerArgs);
         docker.on("close", function (status) {
-            tempFiles.forEach(function (f) {
-                FS.unlinkSync(f);
-            });
+            cleanTempFiles();
             next(status);
         });
         docker.stderr.pipe(process.stderr);
@@ -283,9 +284,7 @@ const pushTaskRun = function (buildondemand) {
         var docker = ChildProcess.spawn("docker", dockerArgs);
         var errorData = "";
         docker.on("close", function () {
-            tempFiles.forEach(function (f) {
-                FS.unlinkSync(f);
-            });
+            cleanTempFiles();
             if (errorData.indexOf("Unable to find image") >= 0 && buildondemand) {
                 pushTaskBuild();
                 pushTaskRun(false);
