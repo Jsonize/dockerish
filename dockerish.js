@@ -1,4 +1,4 @@
-const GetOpt = require("node-getopt");
+const { program } = require("commander");
 const FS = require("fs");
 const Path = require('path');
 const Template = require('lodash.template');
@@ -7,20 +7,22 @@ const Yaml = require("js-yaml");
 const ChildProcess = require("child_process");
 const OS = require("os");
 
-var parsedArgs = GetOpt.create([
-    ["h", "help", "shows help"],
-    ["c", "config=FILE", "dockerish config file, defaults to ./dockerish.config.json"],
-    ["o", "overwrite=ARG+", "overwrite config options"],
-    ["v", "mounts=MOUNTS+", "additional mounts"],
-    ["n", "namespace=NAMESPACE", "config sub name space (optional)"],
-    ["t", "target=FILE", "dockerish template file or folder containing the template file, defaults to ./dockerish.template.yml"],
-    ["r", "run", "runs the container (add additional parameters after --)"],
-    ["x", "runc=CMD", "runs the container with a particular command (add additional parameters after --)"],
-    ["s", "stop", "stops the container"],
-    ["b", "build", "builds the container"],
-    ["e", "buildondemand", "builds the container on demand when running"],
-    ["d", "debug", "debug"]
-]).bindHelp().parseSystem();
+program
+    .option("-c, --config <file>", "dockerish config file, defaults to ./dockerish.config.json")
+    .option("-o, --overwrite <arg...>", "overwrite config options")
+    .option("-v", "mounts <mount...>", "additional mounts")
+    .option("-n, --namespace <namespace>", "config sub name space (optional)")
+    .option("-t, --target <file>", "dockerish template file or folder containing the template file, defaults to ./dockerish.template.yml")
+    .option("-r, --run", "runs the container (add additional parameters after --)")
+    .option("-x, --runc <cmd>", "runs the container with a particular command (add additional parameters after --)")
+    .option("-s, --stop", "stops the container")
+    .option("-b, --build", "builds the container")
+    .option("-e, --buildondemand", "builds the container on demand when running")
+    .option("-d, --debug", "debug");
+
+program.parse(process.argv);
+const options = program.opts();
+
 
 var tempFiles = [];
 
@@ -36,21 +38,21 @@ process.on('SIGINT', function() {
 
 
 var config = {};
-if (parsedArgs.options.config)
-    config = JSON.parse(FS.readFileSync(parsedArgs.options.config));
+if (options.config)
+    config = JSON.parse(FS.readFileSync(options.config));
 else if (FS.existsSync("./dockerish.config.json"))
     config = JSON.parse(FS.readFileSync("./dockerish.config.json"));
 
-if (parsedArgs.options.overwrite) {
-    parsedArgs.options.overwrite.forEach(function (keyvalue) {
+if (options.overwrite) {
+    options.overwrite.forEach(function (keyvalue) {
         var splt = keyvalue.split(":");
         config[splt.shift()] = splt.join(":");
     });
 }
 
 var mountPlaceholders = {};
-if (parsedArgs.options.mounts) {
-    parsedArgs.options.mounts.forEach(function (keyvalue) {
+if (options.mounts) {
+    options.mounts.forEach(function (keyvalue) {
         var splt = keyvalue.split(":");
         mountPlaceholders[splt[0]] = splt[1];
     });
@@ -91,21 +93,21 @@ const shellScriptOf = function (lines, next) {
 };
 
 
-if (parsedArgs.options.namespace)
-    config = config[parsedArgs.options.namespace] || {};
+if (options.namespace)
+    config = config[options.namespace] || {};
 
-if (parsedArgs.options.debug)
+if (options.debug)
     console.log(config);
 
 var targetFile = "./dockerish.template.yml";
-if (parsedArgs.options.target && FS.lstatSync(parsedArgs.options.target).isDirectory())
-    targetFile = parsedArgs.options.target + "/dockerish.template.yml";
-else if (parsedArgs.options.target)
-    targetFile = parsedArgs.options.target;
+if (options.target && FS.lstatSync(options.target).isDirectory())
+    targetFile = options.target + "/dockerish.template.yml";
+else if (options.target)
+    targetFile = options.target;
 
 var rawTarget = FS.readFileSync(targetFile);
 
-if (parsedArgs.options.debug)
+if (options.debug)
     console.log(rawTarget + "");
 
 config.FS = FS;
@@ -137,12 +139,12 @@ if (compiledTarget.indexOf("%{HOSTIP}") >= 0) {
     compiledTarget = compiledTarget.split("%{HOSTIP}").join(hostip);
 }
 
-if (parsedArgs.options.debug)
+if (options.debug)
     console.log(compiledTarget);
 
 var target = Yaml.safeLoad(compiledTarget);
 
-if (parsedArgs.options.debug)
+if (options.debug)
     console.log(target);
 
 var tasks = [];
@@ -150,12 +152,12 @@ var tasks = [];
 const targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
 
 
-if (parsedArgs.options.stop) {
+if (options.stop) {
     tasks.push(function (next) {
         var dockerArgs = target.run && target.run.restart ? ["rm", "-f"] : ["stop"];
         dockerArgs.push(target.container.image);
-        dockerArgs = dockerArgs.concat(parsedArgs.argv);
-        if (parsedArgs.options.debug)
+        dockerArgs = dockerArgs.concat(program.args);
+        if (options.debug)
             console.log("docker", dockerArgs.join(" "));
         var docker = ChildProcess.spawn("docker", dockerArgs, {
             cwd: config.target
@@ -203,8 +205,8 @@ const pushTaskBuild = function () {
             target.container.name,
             targetDir
         ];
-        dockerArgs = dockerArgs.concat(parsedArgs.argv);
-        if (parsedArgs.options.debug)
+        dockerArgs = dockerArgs.concat(program.args);
+        if (options.debug)
             console.log("docker", dockerArgs.join(" "));
         var docker = ChildProcess.spawn("docker", dockerArgs, {
             cwd: config.target
@@ -234,7 +236,7 @@ const pushTaskRun = function (buildondemand) {
 
     tasks.push(function (next) {
         var dockerArgs = ["run"];
-        var targetrun = parsedArgs.options.runc ? target[parsedArgs.options.runc] : target.run;
+        var targetrun = options.runc ? target[options.runc] : target.run;
         targetrun = targetrun || {};
         if (targetrun.daemon)
             dockerArgs.push("-d");
@@ -282,8 +284,8 @@ const pushTaskRun = function (buildondemand) {
         dockerArgs.push(target.container.name);
         if (targetrun.command)
             dockerArgs = dockerArgs.concat(targetrun.command.split(" "));
-        dockerArgs = dockerArgs.concat(parsedArgs.argv);
-        if (parsedArgs.options.debug)
+        dockerArgs = dockerArgs.concat(program.args);
+        if (options.debug)
             console.log("docker", dockerArgs.join(" "));
         var docker = ChildProcess.spawn("docker", dockerArgs, {
             cwd: config.target
@@ -307,11 +309,11 @@ const pushTaskRun = function (buildondemand) {
 };
 
 
-if (parsedArgs.options.build)
+if (options.build)
     pushTaskBuild();
 
-if (parsedArgs.options.run || parsedArgs.options.runc)
-    pushTaskRun(parsedArgs.options.buildondemand);
+if (options.run || options.runc)
+    pushTaskRun(options.buildondemand);
 
 
 var taskExecute = function (status) {
