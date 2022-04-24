@@ -17,6 +17,7 @@ program
     .option("-x, --runc <cmd>", "runs the container with a particular command (add additional parameters after --)")
     .option("-s, --stop", "stops the container")
     .option("-b, --build", "builds the container")
+    .option("-bx, --buildx <archictectures>", "builds the container against architectures ")
     .option("-e, --buildondemand", "builds the container on demand when running")
     .option("-d, --debug", "debug");
 
@@ -197,14 +198,16 @@ const pushTaskBuild = function () {
         });
         tempFiles.push(tempDockerfile);
         FS.writeFileSync(tempDockerfile, dockerfileLines.join("\n"));
-        var dockerArgs = [
-            "build",
+        var dockerArgs = ["build"];
+        if (options.buildx)
+            dockerArgs = ["buildx", "build", "--platform", options.buildx];
+        dockerArgs = dockerArgs.concat([
             "-f",
             tempDockerfile,
             "-t",
             target.container.name,
             targetDir
-        ];
+        ]);
         dockerArgs = dockerArgs.concat(program.args);
         if (options.debug)
             console.log("docker", dockerArgs.join(" "));
