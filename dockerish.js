@@ -200,7 +200,7 @@ const pushTaskBuild = function () {
         FS.writeFileSync(tempDockerfile, dockerfileLines.join("\n"));
         var dockerArgs = ["build"];
         if (options.buildx)
-            dockerArgs = ["buildx", "build", "--platform", options.buildx];
+            dockerArgs = ["buildx", "build", "--platform", options.buildx, "--output", "type=docker"];
         dockerArgs = dockerArgs.concat([
             "-f",
             tempDockerfile,
