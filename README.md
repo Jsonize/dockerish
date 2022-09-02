@@ -73,12 +73,6 @@ Create a file called `dockerish.config.json` (e.g. in the same directory):
 
 
 
-## Contributors
-
-- Foodji
-- Oliver Friedmann
-
-
 ## License
 
 Apache-2.0
