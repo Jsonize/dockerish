@@ -267,8 +267,13 @@ const pushTaskRun = function (buildondemand) {
                 dockerArgs.push("-v");
                 var mountHost = Path.resolve(mount.placeholder ? mountPlaceholders[mount.placeholder] : mount.host);
                 dockerArgs.push(mountHost + ":" + mount.container + ":" + mount.permission);
-                if (mount.permission.indexOf("w") >= 0 && !FS.existsSync(mountHost))
-                    FS.writeFileSync(mountHost, "");
+                if (mount.permission.indexOf("w") >= 0 && !FS.existsSync(mountHost)) {
+                    if (Path.extname(mountHost))
+                        FS.writeFileSync(mountHost, "");
+                    else
+                        FS.mkdirSync(mountHost);
+                }
+
             });
         }
         if (targetrun.privileged) {
