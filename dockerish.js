@@ -281,6 +281,13 @@ const pushTaskRun = function (buildondemand) {
             dockerArgs.push("-v");
             dockerArgs.push("/dev:/dev");
         }
+        if (targetrun.memory) {
+            dockerArgs.push("--memory=" + targetrun.memory);
+        }
+        if (targetrun.logmaxsize) {
+            dockerArgs.push("--log-opt");
+            dockerArgs.push("max-size=" + targetrun.logmaxsize);
+        }
         if (target.container.image) {
             dockerArgs.push("--name");
             dockerArgs.push(target.container.image);
