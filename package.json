@@ -1,7 +1,7 @@
 {
     "name": "dockerish",
     "description": "Dockerish is an easy way to build, run and stop containers with a local config file based on a template.",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "repository": "https://github.com/jsonize/dockerish",
     "license": "Apache-2.0",
     "engines": {

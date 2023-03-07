@@ -17,6 +17,7 @@ program
     .option("-x, --runc <cmd>", "runs the container with a particular command (add additional parameters after --)")
     .option("-s, --stop", "stops the container")
     .option("-b, --build", "builds the container")
+    .option("-nc, --nocache", "builds the container without cache")
     .option("-bx, --buildx <archictectures>", "builds the container against architectures ")
     .option("-e, --buildondemand", "builds the container on demand when running")
     .option("-d, --debug", "debug");
@@ -192,7 +193,10 @@ const pushTaskBuild = function () {
         var dockerfileLines = [
             "FROM " + target.dockerfile.from,
             "MAINTAINER " + target.dockerfile.maintainer
-        ].concat(target.dockerfile.commands.split("\n"));
+        ];
+        if (options.nocache)
+            dockerfileLines.push("RUN echo " + (new Date()).getTime());
+        dockerfileLines = dockerfileLines.concat(target.dockerfile.commands.split("\n"));
         var tempDockerfile = Tmp.tmpNameSync({
             template: targetDir + "/Dockerfile-tmp-XXXXXX"
         });
