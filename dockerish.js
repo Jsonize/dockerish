@@ -13,6 +13,7 @@ program
     .option("-v", "mounts <mount...>", "additional mounts")
     .option("-n, --namespace <namespace>", "config sub name space (optional)")
     .option("-t, --target <file>", "dockerish template file or folder containing the template file, defaults to ./dockerish.template.yml")
+    .option("--cwd <directory>", "use a different working directory")
     .option("-r, --run", "runs the container (add additional parameters after --)")
     .option("-x, --runc <cmd>", "runs the container with a particular command (add additional parameters after --)")
     .option("-s, --stop", "stops the container")
@@ -113,7 +114,7 @@ if (options.debug)
     console.log(rawTarget + "");
 
 config.FS = FS;
-config.target = Path.dirname(targetFile);
+config.target = options.cwd || Path.dirname(targetFile);
 
 var compiledTarget = Template(rawTarget)(config);
 
@@ -151,7 +152,7 @@ if (options.debug)
 
 var tasks = [];
 
-const targetDir = Path.dirname(targetFile) + (target.container.basedir ? "/" + target.container.basedir : "");
+const targetDir = config.target + (target.container.basedir ? "/" + target.container.basedir : "");
 
 
 if (options.stop) {
