@@ -73,6 +73,8 @@ const json_replacer = function (obj) {
                 var root = config;
                 while (json.length > 0)
                     root = root[json.shift()];
+                if (root && typeof root === "object") 
+                    root = JSON.stringify(root);
                 result += root + current.join("}");
                 obj[key] = result;
             }
