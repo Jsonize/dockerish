@@ -295,6 +295,15 @@ const pushTaskRun = function (buildondemand) {
             dockerArgs.push("--log-opt");
             dockerArgs.push("max-size=" + targetrun.logmaxsize);
         }
+        if (targetrun.ipc) {
+            dockerArgs.push("--ipc=" + targetrun.ipc);
+        }
+        if (targetrun.pid) {
+            dockerArgs.push("--pid=" + targetrun.pid);
+        }
+        if (targetrun.net) {
+            dockerArgs.push("--net=" + targetrun.net);
+        }
         if (target.container.image) {
             dockerArgs.push("--name");
             dockerArgs.push(target.container.image);
