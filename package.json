@@ -15,7 +15,7 @@
         "js-yaml": "~3.13.1",
         "lodash.template": "~4.5.0",
         "commander": "^8.3.0",
-        "tmp": "0.0.33"
+        "tmp": "0.2.4"
     },
     "files": [
         "dockerish.js",
