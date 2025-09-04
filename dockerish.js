@@ -21,7 +21,8 @@ program
     .option("-nc, --nocache", "builds the container without cache")
     .option("-bx, --buildx <archictectures>", "builds the container against architectures ")
     .option("-e, --buildondemand", "builds the container on demand when running")
-    .option("-d, --debug", "debug");
+    .option("-d, --debug", "debug")
+    .option("--outputenv", "output environment");
 
 program.parse(process.argv);
 const options = program.opts();
@@ -156,6 +157,9 @@ var tasks = [];
 
 const targetDir = config.target + (target.container.basedir ? "/" + target.container.basedir : "");
 
+if (options.outputenv) {
+    console.log(target.environment);
+}
 
 if (options.stop) {
     tasks.push(function (next) {
